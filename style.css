@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+  background: black;
+  color: white;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.app {
+  text-align: center;
+}
+
+.time {
+  font-size: 64px;
+  margin-bottom: 40px;
+}
+
+.buttons button {
+  font-size: 20px;
+  padding: 12px 40px;
+  border-radius: 50px;
+  border: none;
+}
+
+.settings {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.settings input {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px;
+}
+
+.hidden {
+  display: none;
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        :root { 
+            /* Using the mountain image provided */
+            --ios-bg: url('https://i.ibb.co/LzhY4mP/mountain.jpg'); 
+        }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; color: white; user-select: none; -webkit-user-select: none; }
+        
+        /* PAGE 1: SETUP */
+        #page1 { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 20px; background: #111; position: relative; z-index: 100; }
+        .setup-btn { width: 220px; padding: 18px; background: #333; border-radius: 15px; text-align: center; font-size: 18px; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+        /* PAGE 2: LOCKSCREEN */
+        #page2 { display: none; width: 100%; height: 100%; background: var(--ios-bg) no-repeat center center; background-size: cover; position: relative; flex-direction: column; align-items: center; justify-content: space-between; }
+        
+        /* THE REALISTIC BLUR */
+        #page2::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); }
+
+        .ui-content { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 60px 0 60px 0; box-sizing: border-box; }
+
+        #clock { font-size: 84px; font-weight: 200; letter-spacing: -2px; margin-top: 20px; }
+        #instruction { font-size: 19px; font-weight: 500; margin: 40px 0 25px 0; padding: 10px 40px; }
+
+        .dots-row { display: flex; gap: 15px; margin-bottom: 50px; }
+        .dot { width: 12px; height: 12px; border: 1.5px solid white; border-radius: 50%; }
+        .dot.fill { background: white; }
+
+        .keypad { display: grid; grid-template-columns: repeat(3, 82px); gap: 16px 24px; }
+        .key { width: 82px; height: 82px; border-radius: 50%; background: rgba(255,255,255,0.15); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .key:active { background: rgba(255,255,255,0.4); }
+        .num { font-size: 34px; font-weight: 400; }
+        .let { font-size: 10px; font-weight: 700; letter-spacing: 1px; margin-top: -3px; }
+
+        .footer { width: 80%; display: flex; justify-content: space-between; font-size: 16px; font-weight: 500; margin-top: 30px; opacity: 0.9; }
+
+        .shake { animation: ios-shake 0.35s; }
+        @keyframes ios-shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-12px);} 75% {transform: translateX(12px);} }
+    </style>
+</head>
+<body>
+
+    <div id="page1">
+        <div class="setup-btn" onclick="startApp(4)">4-Digit Mode</div>
+        <div class="setup-btn" onclick="startApp(6)">6-Digit Mode</div>
+    </div>
+
+    <div id="page2">
+        <div class="ui-content">
+            <div id="clock">00:00</div>
+            
+            <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                <div id="instruction" 
+                     ontouchstart="triggerStart()" 
+                     ontouchend="triggerEnd()"
+                     onmousedown="triggerStart()"
+                     onmouseup="triggerEnd()">Enter Passcode</div>
+                
+                <div class="dots-row" id="dotWrapper"></div>
+
+                <div class="keypad" id="keyGrid"></div>
+
+                <div class="footer">
+                    <span>Emergency</span>
+                    <span onclick="resetInput()">Cancel</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mode = 4; let input = ""; let savedCode = "0000"; let isRevealing = false; let timer;
+
+        function startApp(m) {
+            mode = m;
+            savedCode = m === 4 ? "0000" : "000000";
+            document.getElementById('page1').style.display = 'none';
+            document.getElementById('page2').style.display = 'flex';
+            const wrap = document.getElementById('dotWrapper');
+            wrap.innerHTML = '';
+            for(let i=0; i<m; i++) wrap.innerHTML += '<div class="dot"></div>';
+            renderKeypad();
+            runClock();
+        }
+
+        function renderKeypad() {
+            const grid = document.getElementById('keyGrid');
+            const layout = [['1',''],['2','ABC'],['3','DEF'],['4','GHI'],['5','JKL'],['6','MNO'],['7','PQRS'],['8','TUV'],['9','WXYZ'],['0','']];
+            layout.forEach((val, i) => {
+                let k = document.createElement('div');
+                k.className = 'key';
+                if(i===9) k.style.gridColumn = '2';
+                k.innerHTML = `<span class="num">${val[0]}</span><span class="let">${val[1]}</span>`;
+                k.onclick = () => handlePress(val[0]);
+                grid.appendChild(k);
+            });
+        }
+
+        function handlePress(n) {
+            if(input.length < mode) {
+                input += n;
+                refreshDots();
+                if(input.length === mode) {
+                    savedCode = input;
+                    setTimeout(showError, 250);
+                }
+            }
+        }
+
+        function refreshDots() {
+            const ds = document.querySelectorAll('.dot');
+            ds.forEach((d, i) => d.classList.toggle('fill', i < input.length));
+        }
+
+        function showError() {
+            const p2 = document.getElementById('page2');
+            p2.classList.add('shake');
+            if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            setTimeout(() => { p2.classList.remove('shake'); resetInput(); }, 400);
+        }
+
+        function resetInput() { input = ""; refreshDots(); }
+
+        function runClock() {
+            if(isRevealing) return;
+            const now = new Date();
+            document.getElementById('clock').innerText = 
+                String(now.getHours()).padStart(2,'0') + ":" + String(now.getMinutes()).padStart(2,'0');
+        }
+        setInterval(runClock, 1000);
+
+        // REVEAL LOGIC: 1 SECOND HOLD
+        function triggerStart() {
+            timer = setTimeout(() => {
+                isRevealing = true;
+                let display = savedCode;
+                if(mode === 4) display = savedCode.slice(0,2) + ":" + savedCode.slice(2,4);
+                document.getElementById('clock').innerText = display;
+            }, 1000); // Changed to 1 second
+        }
+
+        function triggerEnd() {
+            clearTimeout(timer);
+            isRevealing = false;
+            runClock();
+        }
+    </script>
+</body>
+</html>
